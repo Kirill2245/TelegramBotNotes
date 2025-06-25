@@ -46,6 +46,12 @@ async def post_init(application: Application):
     commands = [
         BotCommand("note", "Создать заметку"),
         BotCommand("viewing_note", "Посмотреть заметки"),
+        BotCommand("delete_note", "Удалить заметку"),
+        BotCommand("clear_note", "Удалить все заметки"),
+        BotCommand("reminder", "Создать напоминание"),
+        BotCommand("reminder_note", "Посмотреть напоминание"),
+        BotCommand("delete_reminder", "Удалить напоминание"),
+        BotCommand("clear_reminder", "Удалить все напоминания"),
     ]
     await application.bot.set_my_commands(commands)
 
