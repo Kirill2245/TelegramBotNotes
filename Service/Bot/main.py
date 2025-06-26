@@ -1,1 +1,3 @@
-from Service.DateBase.Connection import API
+from Service.DateBase.Querty import *
+def bot():
+    test()

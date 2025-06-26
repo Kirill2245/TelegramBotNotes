@@ -10,9 +10,6 @@ password = os.getenv('PASSWORD')
 bd_name = os.getenv('BD_NAME')
 
 
-def API(query):
-    return query
-
 try:
     connection = pymysql.connect(
     host = host,
@@ -22,10 +19,6 @@ try:
     database = bd_name,
     cursorclass = pymysql.cursors.DictCursor
     )
-    try:
-        pass
-    finally:
-        connection.close()
 except Exception as ex:
     print (ex)
-    
+
