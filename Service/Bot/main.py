@@ -10,6 +10,7 @@ from telegram.ext import (
     ContextTypes,
     MessageHandler,
     filters,
+    CallbackQueryHandler,
     ConversationHandler
 )
 from datetime import datetime
@@ -60,6 +61,7 @@ def bot():
             [InlineKeyboardButton("Семья", callback_data='/family_check')],
             [InlineKeyboardButton("Личное", callback_data='/personal_check')],
             [InlineKeyboardButton("Прочее", callback_data='/other_check')],
+            [InlineKeyboardButton("Просмотреть все заметки", callback_data='/all_check')],
         ]
         return InlineKeyboardMarkup(keybutton)
 
@@ -78,6 +80,27 @@ def bot():
             "Добро пожаловать в бота для заметок и напоминаний!",
             reply_markup=get_main_keyboard()
         )
+
+    async def note_add(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        # Получаем сообщение в зависимости от типа обновления
+        if update.callback_query:
+            message = update.callback_query.message
+        else:
+            message = update.message
+        
+        await message.reply_text(
+            "Введите текст заметки:",
+            reply_markup=ReplyKeyboardRemove()
+        )
+        return NOTE_TEXT
+
+    async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        query = update.callback_query
+        await query.answer()
+        
+        if query.data == '/study':
+            await note_add(update, context)
+        # Добавь обработку других callback_data здесь
 
     #ФУНКЦИИ ЗАМЕТОК
     async def note(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -130,7 +153,7 @@ def bot():
     #Установка для меню команд
     async def post_init(application: Application):
         commands = [
-            BotCommand("note", "Создать заметку"),
+            BotCommand("note_add", "Создать заметку"),
             BotCommand("viewing_note", "Посмотреть заметки")
         ]
         await application.bot.set_my_commands(commands)
@@ -138,13 +161,23 @@ def bot():
     #интегрируем кнопки на главном меню
     async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text = update.message.text
-        
         if text == "📝 Создать заметку":
-            return await note(update, context)
+            await note_add(update, context)
         elif text == "📋 Посмотреть заметки":
-            return await viewing_note(update, context)
+            await viewing_note(update, context)
+        else:
+            await update.message.reply_text("Пожалуйста, используйте кнопки меню!")
+
+    async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        query = update.callback_query
+        await query.answer()
         
-        await update.message.reply_text("Пожалуйста, используйте кнопки меню или команды")
+        if query.data == '/study':
+            await note_add(update, context)
+        elif query.data == '/note':
+            await note(update, context)
+        
+        # Добавь обработку других callback_data здесь
 
     #ЗАПУСК БОТА
     def main():
@@ -153,20 +186,23 @@ def bot():
 
     #Обработчик создания заметки
         note_conv_handler = ConversationHandler(
-            entry_points=[CommandHandler('note', note), #активирует диало при команде /note
-                        MessageHandler(filters.Regex('^📝 Создать заметку$'), note)], #активирует диалог при нажатии кнопки
-            states={
-                NOTE_TEXT: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_note)]
-            }, #NOTE_TEXT - состояние ожидания текста заметки, MessageHandler ловит только текстовые сообщения (filters.TEXT), но не команды (~filters.COMMAND), save_note - функция, которая сохранит заметку
-            fallbacks=[CommandHandler('cancel', cancel)]
-        )
+        entry_points=[
+            CommandHandler('note_add', note_add),
+            MessageHandler(filters.Regex('^📝 Создать заметку$'), note),
+            CallbackQueryHandler(note_add, pattern='^/study$')
+        ],
+        states={
+            NOTE_TEXT: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_note)]
+        },
+        fallbacks=[CommandHandler('cancel', cancel)]
+    )
 
     # Регистрация обработчиков
         application.add_handler(CommandHandler("start", start))
         application.add_handler(CommandHandler("viewing_note", viewing_note))
         application.add_handler(note_conv_handler) #связывает диалоговый сценариц с работой, без этого ConversationHandler останется неактивным
-
     #Обработчик текстовых сообщений (для кнопок)
+        application.add_handler(CallbackQueryHandler(handle_callback))
         application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
         
     # Запуск бота
