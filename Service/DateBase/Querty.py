@@ -21,7 +21,7 @@ def getUsers(data):
             else:
                 return False 
     except Exception as ex:
-        print (ex)
+        return ex
     finally:
         connection.close()
         
@@ -33,7 +33,7 @@ def receiveNotes(data):
             result = cursor.fetchall()
             return result
     except Exception as ex:
-        print (ex)
+        return ex
     finally:
         connection.close()
 
@@ -48,7 +48,7 @@ def getNotes(data):
             else:
                 return False 
     except Exception as ex:
-        print (ex)
+        return ex
     finally:
         connection.close()
 
@@ -60,7 +60,7 @@ def receiveNotesType(data):
             result = cursor.fetchall()
             return result
     except Exception as ex:
-        print (ex)
+        return ex
     finally:
         connection.close()
 
@@ -75,6 +75,34 @@ def updateNotes(data):
             else:
                 return False 
     except Exception as ex:
-        print (ex)
+        return ex
+    finally:
+        connection.close()
+
+def delateNotes(data):
+    try:
+        with connection.cursor() as cursor:
+            sql_query = "DELETE FROM notes WHERE idNotes = %s"
+            cursor.execute(sql_query, (data['idNotes']))
+            connection.commit()
+            if cursor.rowcount > 0:
+                return True  
+            else:
+                return False 
+    except Exception as ex:
+        return ex
+    finally:
+        connection.close()
+        
+def searchNotes(data):
+    search_text = f"%{data['TextNotes']}%"
+    try:
+        with connection.cursor() as cursor:
+            sql_query = "SELECT * FROM notes WHERE idUsers = %s and TextNotes LIKE %s;"
+            cursor.execute(sql_query, (data['idUsers'] , search_text))
+            result = cursor.fetchall()
+            return result
+    except Exception as ex:
+        return ex
     finally:
         connection.close()
