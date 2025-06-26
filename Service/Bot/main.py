@@ -1,9 +1,9 @@
-# from Service.DateBase.Querty import *
+from Service.DateBase.Querty import *
 from dotenv import load_dotenv
 from pathlib import Path
 import os
 import logging
-from telegram import Update, BotCommand, ReplyKeyboardMarkup, ReplyKeyboardRemove
+from telegram import Update, BotCommand, ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -29,7 +29,7 @@ def bot():
     # Состояния для ConversationHandler
     NOTE_TEXT, REMINDER_TEXT, REMINDER_TIME = range(3)
 
-    # Имитация базы данных в памяти ФЕЙК БАЗЗА ЕПТ
+    # Подключение базы данных
     fake_db = {
         'notes': {},
         'reminders': {},
@@ -42,15 +42,38 @@ def bot():
             ["📝 Создать заметку", "📋 Посмотреть заметки"],
         ], resize_keyboard=True)
 
+
+    def get_keyboard_add():
+        keybutton = [
+            [InlineKeyboardButton("Учеба", callback_data='/study')],
+            [InlineKeyboardButton("Работа", callback_data='/work')],
+            [InlineKeyboardButton("Семья", callback_data='/family')],
+            [InlineKeyboardButton("Личное", callback_data='/personal')],
+            [InlineKeyboardButton("Прочее", callback_data='/other')],
+        ]
+        return InlineKeyboardMarkup(keybutton)
+
+    def get_keyboard_check():
+        keybutton = [
+            [InlineKeyboardButton("Учеба", callback_data='/study_check')],
+            [InlineKeyboardButton("Работа", callback_data='/work_check')],
+            [InlineKeyboardButton("Семья", callback_data='/family_check')],
+            [InlineKeyboardButton("Личное", callback_data='/personal_check')],
+            [InlineKeyboardButton("Прочее", callback_data='/other_check')],
+        ]
+        return InlineKeyboardMarkup(keybutton)
+
+
     #настройка команды /strart
     async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_id = update.message.from_user.id
         # Инициализация хранилища для пользователя
-        if user_id not in fake_db['notes']:
-            fake_db['notes'][user_id] = []
-        if user_id not in fake_db['reminders']:
-            fake_db['reminders'][user_id] = []
-        
+        data = {'idUsers': user_id}
+        print(user_id)
+        if checkUsers(data) == False:
+            getUsers(data)
+        else:
+            print("Пользователь уже существует")
         await update.message.reply_text(
             "Добро пожаловать в бота для заметок и напоминаний!",
             reply_markup=get_main_keyboard()
@@ -59,8 +82,8 @@ def bot():
     #ФУНКЦИИ ЗАМЕТОК
     async def note(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(
-            "Введите текст заметки: ",
-            reply_markup=ReplyKeyboardRemove()
+            f'👋 Выберите категорию: \n',
+            reply_markup=get_keyboard_add()
         )
         return NOTE_TEXT
 
@@ -87,18 +110,14 @@ def bot():
 
     #Просмотр заметок
     async def viewing_note(update: Update, context: ContextTypes.DEFAULT_TYPE):
-        user_id = update.message.from_user.id
-        notes = fake_db['notes'].get(user_id, [])
+        await update.message.reply_text(
+            f'👋 Выберите категорию: \n',
+            reply_markup=get_keyboard_check()
+        )
+        return NOTE_TEXT
         
-        if not notes:
-            await update.message.reply_text("У вас пока нет заметок", reply_markup=get_main_keyboard())
-            return
         
-        response = "📋 Ваши заметки:\n\n"
-        for note in notes:
-            response += f"🆔 {note['id']}\n📅 {note['created_at']}\n📌 {note['text']}\n\n"
-        
-        await update.message.reply_text(response, reply_markup=get_main_keyboard())
+
 
 
     async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -155,5 +174,4 @@ def bot():
     if __name__ == '__main__':
         main()
     main()
-
 bot()
